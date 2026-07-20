@@ -1,0 +1,5 @@
+
+    // "ANTHROPIC_MODEL": "arcee-ai/trinity-large-preview:free"
+    // "ANTHROPIC_MODEL": "nvidia/nemotron-3-super-120b-a12b:free" //Best programming modal #9
+openai/gpt-oss-120b:free
+google/gemini-3-flash-preview

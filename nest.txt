@@ -1,0 +1,368 @@
+---
+name: nestjs-backend
+description: Architect and implement enterprise-grade, SaaS-level backend systems using NestJS (Node.js) with strict engineering discipline, security compliance, scalability standards, and mandatory test coverage. Designed for platforms serving billions of users with production reliability and engineering excellence.
+---
+
+# Enterprise NestJS Backend Architecture & Development Standard
+
+This skill defines the mandatory standards for building production-grade SaaS backends intended for high-scale environments (millions to billions of users).
+
+The objective is to deliver:
+
+- Scalable architecture
+- Long-term maintainability
+- Performance at scale
+- Security compliance
+- Test-driven reliability
+- Distinct, domain-driven design quality
+
+Every implementation must meet enterprise engineering standards.
+
+---
+
+# 1. NON-NEGOTIABLE ENGINEERING REQUIREMENTS
+
+## 1.1 Framework & Platform Standard
+
+- Framework: **NestJS (Node.js)**
+- Language: **TypeScript (strict mode)**
+- Transport Strategy: Choose appropriately (REST, GraphQL, gRPC, WebSockets, Microservices) based on scalability and performance needs.
+- No alternative frameworks.
+
+---
+
+## 1.2 Architectural Discipline
+
+All implementations must follow:
+
+### SOLID Principles
+
+- Single Responsibility
+- Open/Closed
+- Liskov Substitution
+- Interface Segregation
+- Dependency Inversion
+
+### ACID-Inspired Backend Consistency
+
+- Atomic module design
+- Isolated business logic
+- Predictable state and data management
+- Deterministic request/response behavior
+- Durable and extensible patterns
+
+### Separation of Concerns
+
+Clear modular boundaries:
+
+/src
+/modules
+/<feature>
+/<feature>.module.ts
+/<feature>.controller.ts
+/<feature>.service.ts
+/<feature>.repository.ts
+/dto/
+/entities/
+/interfaces/
+/guards/
+/pipes/
+/decorators/
+/tests/
+/common
+/filters/
+/guards/
+/interceptors/
+/pipes/
+/decorators/
+/utils/
+/config/
+/database/
+/health/
+
+Requirements:
+
+- No business logic inside controllers
+- No direct database calls inside services (use repositories)
+- Reusable abstractions must be extracted to `/common`
+- No monolithic modules
+- No tight coupling between modules
+- Clear dependency direction via NestJS DI container
+
+---
+
+## 1.3 Code Quality Standards
+
+- Strict TypeScript (no `any`)
+- Fully typed DTOs, entities, responses, and utilities
+- No dead code
+- No `console.log` in production code (use NestJS Logger)
+- Clean imports with barrel files (`index.ts`)
+- Memory-safe and event-loop-aware patterns
+- Performance-safe async/await usage
+- Global exception filters and error boundaries
+- Defensive programming mindset
+
+Code must be readable, scalable, and maintainable for large engineering teams.
+
+---
+
+# 2. API DESIGN & VALIDATION (MANDATORY)
+
+API design is not optional — it defines the contract.
+
+## 2.1 RESTful Standards
+
+Use proper HTTP semantics:
+
+- `GET` — Read-only, idempotent
+- `POST` — Resource creation
+- `PUT` / `PATCH` — Full / partial update
+- `DELETE` — Resource removal
+
+Enforce:
+
+- Versioned endpoints: `/api/v1/...`
+- Consistent response envelope:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "string",
+  "timestamp": "ISO8601",
+  "statusCode": 200
+}
+```
+
+- Meaningful HTTP status codes
+- Pagination on all list endpoints
+
+---
+
+## 2.2 DTO & Validation
+
+Requirements:
+
+- Every incoming payload must use a **DTO class** with `class-validator` decorators
+- Every DTO must include:
+  - `@IsNotEmpty()`
+  - Type decorators (`@IsString()`, `@IsNumber()`, etc.)
+  - `@ApiProperty()` for Swagger documentation
+- Use `ValidationPipe` globally with `whitelist: true` and `forbidNonWhitelisted: true`
+- DTOs must be:
+  - Context-specific
+  - Named meaningfully (`CreateUserDto`, `UpdateProductDto`)
+  - Never reused across unrelated domains
+
+---
+
+## 2.3 Security Compliance
+
+Must ensure:
+
+- `helmet` middleware enabled globally
+- Rate limiting via `@nestjs/throttler`
+- CORS configured explicitly (no wildcard in production)
+- JWT authentication with refresh token rotation
+- Role-based access control (RBAC) via Guards
+- Input sanitization to prevent XSS and injection
+- Secrets managed via environment variables (never hardcoded)
+- OWASP Top 10 awareness in every design decision
+
+APIs must be secure by default, for every user globally.
+
+---
+
+# 3. MANDATORY TESTING
+
+No module may exist without corresponding tests.
+
+## 3.1 Required Stack
+
+- **Jest** (built-in with NestJS)
+- **Supertest** (E2E testing)
+- **@nestjs/testing** (`Test.createTestingModule`)
+
+---
+
+## 3.2 Coverage Requirements
+
+Test the following:
+
+- Controller request/response handling
+- Service business logic
+- Repository data access (mocked DB)
+- Guard and pipe behavior
+- DTO validation rules
+- Exception filter outputs
+- Utility and helper functions
+- Interceptor transformations
+- E2E API flow per module
+
+Use the AAA pattern:
+
+- Arrange
+- Act
+- Assert
+
+Target mindset: minimum **80% meaningful coverage**.
+
+Tests must validate behavior — not implementation details.
+
+---
+
+## 3.3 Test File Structure
+
+/tests
+/<feature>.controller.spec.ts
+/<feature>.service.spec.ts
+/<feature>.repository.spec.ts
+/test
+/<feature>.e2e-spec.ts
+
+---
+
+# 4. DATABASE & DATA LAYER STANDARDS
+
+## 4.1 ORM Strategy
+
+- Use **NativeQuery**
+- Use **TypeORM** or **Prisma** — only when needed
+- Entities must be strongly typed
+- Migrations are mandatory — no `synchronize: true` in production
+- Repository pattern must abstract all DB operations
+- Transactions must wrap multi-step data mutations
+
+## 4.2 Data Integrity
+
+- Foreign key constraints enforced at DB level
+- Soft deletes preferred (`deletedAt` column) over hard deletes
+- Audit fields mandatory on all entities:
+  - `createdAt`
+  - `updatedAt`
+  - `deletedAt` (nullable)
+
+## 4.3 Query Discipline
+
+- No N+1 queries (use eager/lazy loading deliberately)
+- Pagination required on all list queries
+- Index critical columns (foreign keys, frequently filtered fields)
+- Query performance must be profiled before release
+
+---
+
+# 5. SCALABILITY MINDSET (BILLION-USER STANDARD)
+
+Every solution must assume:
+
+- High concurrency
+- Global usage
+- Long-term maintainability
+- Large engineering teams
+- Continuous iteration
+- Security audits
+- Performance monitoring
+
+Architecture and code must survive scale.
+
+---
+
+## 5.1 Observability
+
+- Structured logging via NestJS Logger (JSON in production)
+- Request tracing with correlation IDs
+- Health checks via `@nestjs/terminus`
+- Metrics exposure (Prometheus-compatible preferred)
+- Centralized error tracking (Sentry or equivalent)
+
+## 5.2 Caching Strategy
+
+- Redis-backed caching via `@nestjs/cache-manager`
+- Cache-aside pattern for read-heavy resources
+- TTL explicitly defined — no infinite caches
+- Cache invalidation strategy documented per feature
+
+## 5.3 Async Processing
+
+- Background jobs via `@nestjs/bull` (BullMQ)
+- Event-driven communication via NestJS EventEmitter or message brokers (Kafka, RabbitMQ)
+- Never block the event loop with CPU-heavy synchronous tasks
+
+---
+
+# 6. STRICTLY PROHIBITED
+
+- Business logic inside controllers
+- Direct DB calls inside services (bypass repository)
+- Raw SQL without justification and review
+- `synchronize: true` in production TypeORM config
+- Hardcoded secrets or credentials anywhere in code
+- Wildcard CORS in non-local environments
+- Un-typed request/response objects
+- Untested modules or services
+- `console.log` instead of NestJS Logger
+- Circular module dependencies without `forwardRef`
+- God modules (one module owning all features)
+
+---
+
+# 7. REQUIRED OUTPUT STRUCTURE
+
+When generating implementations, always include:
+
+1. Module folder structure
+2. Typed entities and DTOs
+3. Controller with route definitions
+4. Service with business logic
+5. Repository with data access
+6. Guards and Pipes (if applicable)
+7. Swagger/OpenAPI annotations
+8. Unit tests for every class
+9. E2E test per module
+10. Clear architectural explanation
+11. Design and domain rationale
+
+---
+
+# Implementation Philosophy
+
+A billion-user backend is not built on framework defaults alone.
+
+It requires:
+
+- Architectural clarity
+- Engineering discipline
+- Security rigor
+- Test reliability
+- Performance awareness
+- Domain intentionality
+
+A scalable NestJS backend must be:
+
+Predictable.
+Maintainable.
+Secure.
+Testable.
+Observable.
+Production-ready.
+
+This skill enforces that standard.
+
+---
+
+# Important Rules (MUST FOLLOW FOR EACH IMPLEMENTATION)
+
+1. Before writing any code, describe your approach and wait for approval (ask for approval like a terminal command confirmation).
+2. If the requirements given are ambiguous, ask clarifying questions before writing any code.
+3. After finishing any code, list the edge cases and suggest test cases to cover them.
+4. If a task requires changes to more than 3 files, stop and break it into smaller tasks first.
+5. When there's a bug, start by writing a test that reproduces it, then fix it until the test passes.
+6. Every time a correction is made, reflect on what went wrong and form a plan to never repeat the mistake.
+7. Always use NestJS decorators with meaningful, unique identifiers and Swagger annotations.
+8. Always write unit and E2E test cases.
+9. The maximum lines of one service or controller should not exceed 500 lines — extract into sub-services if needed.
+10. Always review code for logical errors, async pitfalls, and unhandled promise rejections.
+11. Always go with module-based architecture (one domain = one NestJS module).
+12. Always create and use more reusable providers, interceptors, and guards.
+13. Always create `exception.filter.ts` and `http-exception.filter.ts` for every application layer.

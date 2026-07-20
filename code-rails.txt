@@ -1,0 +1,304 @@
+# Code Rails
+
+## Purpose
+
+Code Rails are a set of engineering guidelines that ensure generated code is:
+
+- Secure
+- Maintainable
+- Readable
+- Performant
+- Testable
+- Production-ready
+
+---
+
+# General Rules
+
+## 1. Write Clean Code
+
+- Use meaningful variable and function names.
+- Keep functions small and focused.
+- Avoid duplicated logic (DRY).
+- Prefer composition over duplication.
+- Remove dead code.
+
+---
+
+## 2. Type Safety
+
+- Never use `any` unless absolutely necessary.
+- Prefer strict typing.
+- Use interfaces/types appropriately.
+- Handle nullable values safely.
+
+Example:
+
+```ts
+interface User {
+  id: number;
+  name: string;
+}
+```
+
+---
+
+## 3. Error Handling
+
+- Catch expected errors.
+- Return meaningful error messages.
+- Never swallow exceptions.
+- Log errors appropriately.
+
+Example:
+
+```ts
+try {
+  await service.create();
+} catch (error) {
+  logger.error(error);
+  throw new InternalServerErrorException();
+}
+```
+
+---
+
+## 4. Security
+
+- Never trust user input.
+- Validate all request data.
+- Sanitize user-generated content.
+- Prevent SQL Injection.
+- Prevent XSS.
+- Prevent CSRF where applicable.
+- Never expose secrets.
+- Store secrets in environment variables.
+
+---
+
+## 5. API Design
+
+- Use RESTful naming.
+- Return proper HTTP status codes.
+- Keep responses consistent.
+
+Example:
+
+```json
+{
+  "success": true,
+  "message": "User created successfully",
+  "data": {}
+}
+```
+
+---
+
+## 6. Database
+
+- Use parameterized queries.
+- Avoid N+1 queries.
+- Index searchable columns.
+- Use transactions when required.
+- Never concatenate SQL strings.
+
+Good:
+
+```ts
+SELECT * FROM users WHERE id = ?
+```
+
+Bad:
+
+```ts
+SELECT * FROM users WHERE id = ${id}
+```
+
+---
+
+## 7. Performance
+
+- Avoid unnecessary loops.
+- Cache expensive operations.
+- Lazy load when possible.
+- Optimize database queries.
+- Paginate large datasets.
+
+---
+
+## 8. Logging
+
+Log:
+
+- Errors
+- Warnings
+- Important business events
+
+Do not log:
+
+- Passwords
+- Tokens
+- Credit card numbers
+- Sensitive personal data
+
+---
+
+## 9. Testing
+
+Write:
+
+- Unit Tests
+- Integration Tests
+- Edge Case Tests
+
+Follow AAA:
+
+1. Arrange
+2. Act
+3. Assert
+
+---
+
+## 10. Documentation
+
+Every public function should include documentation.
+
+Example:
+
+```ts
+/**
+ * Creates a new pharmacy order.
+ *
+ * @param dto Order payload
+ * @returns Created order
+ */
+```
+
+---
+
+# Frontend Rails
+
+## React / Next.js
+
+- Prefer functional components.
+- Keep components small.
+- Extract reusable hooks.
+- Avoid unnecessary re-renders.
+- Use loading and error states.
+- Use proper accessibility attributes.
+
+---
+
+## State Management
+
+- Keep global state minimal.
+- Derive state when possible.
+- Avoid prop drilling.
+
+---
+
+## Styling
+
+- Prefer reusable components.
+- Avoid inline styles.
+- Keep Tailwind classes organized.
+
+---
+
+# Backend Rails
+
+## NestJS
+
+- Use Controllers for routing.
+- Keep business logic in Services.
+- Use DTOs.
+- Validate DTOs.
+- Use dependency injection.
+- Keep repositories focused on data access.
+
+---
+
+## Authentication
+
+- JWT
+- Refresh Tokens
+- Password hashing (bcrypt/argon2)
+- Role-based authorization
+- Permission-based authorization
+
+---
+
+# Git Rails
+
+## Commit Messages
+
+Good:
+
+```
+feat(auth): add refresh token support
+```
+
+```
+fix(invoice): prevent duplicate invoice generation
+```
+
+```
+refactor(user): simplify profile update logic
+```
+
+---
+
+## Pull Requests
+
+- Small PRs
+- One feature per PR
+- Include screenshots if UI changes
+- Add tests
+- Request review
+
+---
+
+# Code Review Checklist
+
+- [ ] No duplicated code
+- [ ] Proper naming
+- [ ] Error handling
+- [ ] Input validation
+- [ ] Security considered
+- [ ] Tests added
+- [ ] Documentation updated
+- [ ] No unnecessary complexity
+- [ ] Performance acceptable
+- [ ] No sensitive information exposed
+
+---
+
+# AI Coding Rules
+
+When generating code:
+
+- Produce production-ready code.
+- Prefer readability over cleverness.
+- Explain complex logic.
+- Avoid deprecated APIs.
+- Follow project conventions.
+- Include error handling.
+- Consider edge cases.
+- Avoid unnecessary dependencies.
+- Generate typed code where applicable.
+- Keep solutions simple and maintainable.
+
+---
+
+# Definition of Done
+
+A task is complete when:
+
+- Code compiles successfully.
+- Tests pass.
+- Lint passes.
+- Formatting passes.
+- Security considerations are addressed.
+- Documentation is updated.
+- Code review feedback is resolved.
+- Feature works as expected.

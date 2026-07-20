@@ -1,0 +1,467 @@
+---
+name: react-design
+description: Architect and implement enterprise-grade, SaaS-level React applications using strict engineering discipline, scalable architecture, accessibility compliance, performance optimization, and mandatory test coverage. Designed for FAANG-level production systems serving millions to billions of users.
+---
+
+# Enterprise React Architecture & Design Standard
+
+This skill defines the mandatory standards for building production-grade React applications intended for high-scale SaaS environments.
+
+The objective is to deliver:
+
+- Scalable architecture
+- Long-term maintainability
+- High-performance rendering
+- Accessibility compliance
+- Test-driven reliability
+- Platform-consistent design excellence
+
+Every implementation must meet enterprise engineering standards.
+
+---
+
+# 1. NON-NEGOTIABLE ENGINEERING REQUIREMENTS
+
+## 1.1 Framework & Platform Standard
+
+- Framework: **React 18+**
+- Language: **TypeScript (strict mode enabled)**
+- Architectures allowed:
+  - Clean Architecture
+  - Feature-first modular architecture
+  - Layered architecture
+
+Mandatory support for:
+
+- Web (primary)
+- SSR/SSG (Next.js where applicable)
+- Progressive Web App (PWA-ready where required)
+- Desktop via Electron (optional but scalable-ready)
+
+No hybrid shortcuts. No class components in new code.
+
+---
+
+## 1.2 Architectural Discipline
+
+All implementations must follow:
+
+### SOLID Principles
+
+- Single Responsibility
+- Open/Closed
+- Liskov Substitution
+- Interface Segregation
+- Dependency Inversion
+
+### ACID-Inspired Frontend Consistency
+
+- Atomic component composition
+- Isolated business logic
+- Predictable state flows
+- Deterministic UI rendering
+- Extensible, replaceable modules
+
+### Separation of Concerns
+
+Clear modular boundaries:
+
+/src
+  /core
+    /constants
+    /errors
+    /network
+    /utils
+    /theme
+
+  /features
+    /feature_name
+      /data
+        /datasources
+        /models
+        /repositories
+      /domain
+        /entities
+        /repositories
+        /usecases
+      /presentation
+        /pages
+        /components
+        /hooks
+
+  /shared
+    /components
+    /hooks
+    /extensions
+    /helpers
+
+  /test
+
+Requirements:
+
+- No API calls inside components
+- No business logic inside UI
+- Custom hooks encapsulate domain logic
+- Repository pattern mandatory
+- Dependency injection via context or DI libraries
+- Feature isolation enforced
+- Avoid god components
+
+---
+
+## 1.3 State Management Standards (MANDATORY)
+
+Allowed enterprise patterns:
+
+- Zustand (Preferred for client state)
+- TanStack Query (Preferred for server state)
+- Redux Toolkit (for complex global state)
+- React Context (only for simple, low-frequency updates)
+
+Rules:
+
+- State must be immutable
+- Predictable state transitions
+- UI reacts to state — never controls logic
+- Side effects isolated from components
+- No uncontrolled global state
+- Server state and client state must be separated
+
+---
+
+## 1.4 Code Quality Standards
+
+- Strict TypeScript — no `any` abuse
+- No implicit `any`
+- Fully typed props, hooks, and API responses
+- Zod or equivalent for runtime schema validation (recommended)
+- No console logs in production
+- Defensive programming mindset
+
+Performance-safe practices:
+
+- `React.memo` for stable pure components
+- `useMemo` and `useCallback` used intentionally, not reflexively
+- Minimize re-render scope
+- Use keys intentionally and stably
+- Avoid excessive component nesting
+- Virtualized lists for large datasets
+- Efficient image loading (lazy, srcset, next/image)
+- Avoid unnecessary state lifts
+
+Code must be readable and scalable for large teams.
+
+---
+
+# 2. ACCESSIBILITY & SEMANTICS (MANDATORY)
+
+Accessibility is required for enterprise-grade apps.
+
+## 2.1 Semantics & Structure
+
+Use semantic HTML elements:
+
+- `<main>`, `<nav>`, `<section>`, `<article>`, `<aside>`
+- `aria-label`, `aria-describedby`, `aria-live`
+- Proper roles for interactive elements
+
+Requirements:
+
+- Meaningful labels for screen readers
+- Correct role definitions
+- Logical tab and focus order
+- Support NVDA / VoiceOver / TalkBack
+
+---
+
+## 2.2 Accessibility Requirements
+
+Must ensure:
+
+- Full keyboard navigation support
+- Visible and styled focus indicators
+- Screen reader compatibility
+- WCAG 2.1 AA minimum color contrast
+- Scalable text support (rem-based sizing)
+- Responsive and fluid layouts
+
+Avoid:
+
+- Click-only interactions without keyboard alternatives
+- Invisible interactive regions
+- Inaccessible modals or dropdowns
+
+---
+
+# 3. MANDATORY TESTING STRATEGY
+
+No production module may exist without tests.
+
+## 3.1 Required Test Types
+
+### Unit Tests
+
+- Usecases / service functions
+- Business logic utilities
+- Custom hooks (via `renderHook`)
+- State slices and reducers
+
+### Component Tests
+
+- Rendering correctness
+- State-driven UI
+- User interaction flows (via `userEvent`)
+- Accessibility labels and roles
+
+### Integration Tests
+
+- Navigation flows
+- API lifecycle validation (MSW recommended)
+- Feature-level end-to-end behavior
+
+### E2E Tests (where applicable)
+
+- Critical user journeys
+- Authentication flows
+- Checkout / submission flows
+
+---
+
+## 3.2 Coverage Requirements
+
+Must test:
+
+- Success states
+- Loading states
+- Error states
+- Edge cases
+- User interactions
+- State transitions
+- Repository / service mocks
+
+Pattern:
+
+- Arrange
+- Act
+- Assert (AAA)
+
+Tooling:
+
+- Vitest or Jest
+- React Testing Library
+- MSW for API mocking
+- Playwright or Cypress for E2E
+
+Target mindset:
+
+- Minimum 80% meaningful coverage
+
+Tests must validate behavior — not implementation details.
+
+---
+
+# 4. FAANG-LEVEL DESIGN SYSTEM PHILOSOPHY
+
+UI must feel intentional, scalable, and premium.
+
+This is NOT template-based UI generation.
+
+Design must reflect:
+
+- Product maturity
+- Design consistency
+- Trust and clarity
+- Long-term scalability
+
+---
+
+## 4.1 Design Direction
+
+Before implementation, define:
+
+### Product Context
+
+- What problem does this app solve?
+- Who are the users?
+- Session frequency and duration?
+- Web-first or cross-platform?
+
+### Aesthetic Strategy
+
+Choose a deliberate direction:
+
+- Refined enterprise minimalism
+- Data-first dashboard system
+- High-density productivity UI
+- Precision geometric layout
+- Quiet luxury interface
+- Industrial clarity design
+
+Avoid:
+
+- Generic component library defaults (unstyled MUI, default Shadcn without customization)
+- Over-animated UIs
+- Trend-driven aesthetics without usability grounding
+- Dribbble-only designs that don't survive real content
+
+---
+
+## 4.2 Motion & Interaction
+
+Motion must be purposeful.
+
+Rules:
+
+- Prefer CSS transitions for simple interactions
+- Use Framer Motion or Motion only when choreography requires it
+- Avoid layout thrash from animations
+- Keep transitions fast and clear
+- Micro-interactions should guide focus, not distract
+
+Performance always wins over decoration.
+
+---
+
+## 4.3 Spatial & Visual Discipline
+
+- Consistent spacing scale (4pt or 8pt grid)
+- Grid-based layouts (CSS Grid primary, Flexbox secondary)
+- Intentional whitespace
+- Strong typographic hierarchy
+- Elevation and shadow used meaningfully
+- No visual noise
+
+No default-looking component library screens.
+
+---
+
+# 5. PERFORMANCE & SCALABILITY (BILLION-USER STANDARD)
+
+Every solution must assume:
+
+- High traffic
+- Low-end devices
+- Slow networks
+- Large datasets
+- Continuous product iteration
+
+Performance requirements:
+
+- Code-split at route and feature level
+- Lazy load non-critical components
+- Virtualize long lists (TanStack Virtual)
+- Debounce expensive interactions
+- Background Web Workers for heavy computation
+- Cache network responses (TanStack Query, SWR, or custom)
+- Tree-shake all imports
+- Optimize Core Web Vitals (LCP, CLS, INP)
+
+Measure performance:
+
+- Lighthouse audits
+- React DevTools Profiler
+- Bundle analyzer (rollup-plugin-visualizer or similar)
+- Web Vitals monitoring in production
+
+---
+
+# 6. NETWORKING & DATA LAYER STANDARDS
+
+- Axios or native `fetch` with typed wrappers
+- Centralized API layer with interceptors
+- Typed DTO / response models
+- Error normalization layer
+- Retry strategies (TanStack Query retries or custom)
+- Request cancellation (AbortController)
+- MSW for development and test mocking
+
+Never expose raw API responses directly to UI components.
+
+---
+
+# 7. DEPENDENCY MANAGEMENT
+
+Rules:
+
+- Minimal dependency usage
+- Avoid unmaintained or low-adoption packages
+- Evaluate bundle impact before adding dependencies
+- Wrap third-party libraries behind abstraction layers
+
+Future replacement must be possible without large refactors.
+
+---
+
+# 8. SECURITY & PRODUCTION READINESS
+
+Mandatory practices:
+
+- Secure token storage (httpOnly cookies preferred)
+- Input sanitization everywhere
+- Content Security Policy headers configured
+- No secrets in source code or client bundles
+- Environment-based configuration (.env with validation)
+- XSS and CSRF protection
+- Proper error boundary implementation
+- Structured logging strategy (no raw console in production)
+
+---
+
+# 9. STRICTLY PROHIBITED
+
+- Business logic inside JSX / components
+- Massive monolithic components doing everything
+- Global mutable state outside of approved patterns
+- Inline API calls in UI components
+- Unstructured or imperative navigation
+- Hardcoded pixel values everywhere
+- Prop drilling beyond 2 levels without context or state
+- Copy-paste architecture
+- Untested modules
+- Implicit `any` types
+- Direct DOM manipulation outside of refs
+
+---
+
+# 10. REQUIRED OUTPUT STRUCTURE
+
+When generating implementations, always include:
+
+1. Folder structure
+2. TypeScript entities / models / schemas
+3. Data sources and API layer
+4. Repository layer
+5. Usecases / service functions
+6. State management layer (client + server state)
+7. UI components and pages
+8. Theme and design system tokens
+9. Unit tests
+10. Component tests
+11. Architectural explanation
+12. Design rationale
+
+---
+
+# Implementation Philosophy
+
+A FAANG-level React SaaS application is not built on visual appeal alone.
+
+It requires:
+
+- Architectural clarity
+- Engineering discipline
+- Accessibility rigor
+- Test reliability
+- Performance awareness
+- Intentional design systems
+
+A scalable React interface must be:
+
+Predictable.  
+Maintainable.  
+Accessible.  
+Testable.  
+Performant.  
+Production-ready.
+
+This skill enforces that standard.

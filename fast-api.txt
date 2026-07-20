@@ -1,0 +1,571 @@
+---
+name: backend-architecture
+description: Architect and implement enterprise-grade backend systems using FastAPI with MySQL (native SQL) in a microservices architecture. Designed for platforms serving millions to billions of users with strict engineering discipline, high reliability, scalability, security, and production-grade performance.
+---
+
+# Enterprise Backend Architecture & Engineering Standard
+
+This skill defines the **mandatory standards** for building **production-grade SaaS backend platforms** designed to operate at massive scale.
+
+Target environment:
+
+- Millions → Billions of users
+- Distributed systems
+- Microservices architecture
+- High availability
+- Production reliability
+
+The objective is to deliver:
+
+- Scalable architecture
+- High-performance database design
+- Reliable APIs
+- Secure systems
+- Observability
+- Long-term maintainability
+
+Every implementation must meet **enterprise engineering standards**.
+
+---
+
+# 1. NON-NEGOTIABLE ENGINEERING REQUIREMENTS
+
+## 1.1 Framework & Platform Standard
+
+Backend Framework
+
+- **FastAPI**
+- **Python 3.11+**
+- **Async-first architecture**
+
+Database
+
+- **MySQL**
+- **Native SQL Queries Only**
+
+Heavy ORMs are discouraged.
+
+Allowed:
+
+- connection pooling
+- lightweight query helpers
+
+However **all critical queries must be written in optimized native SQL.**
+
+---
+
+## 1.2 Microservices Architecture Standard
+
+Systems must follow **true microservices principles**.
+
+Each service must be:
+
+- Independent
+- Deployable
+- Scalable
+- Domain-driven
+
+Example structure:
+
+```
+services/
+user-service/
+auth-service/
+order-service/
+payment-service/
+notification-service/
+```
+
+Each service contains:
+
+```
+app/
+api/
+service/
+dao/
+models/
+schemas/
+utils/
+config/
+middleware/
+exceptions/
+tests/
+```
+
+---
+
+### Service Responsibilities
+
+Each microservice must own:
+
+- its domain logic
+- its database tables
+- its APIs
+
+Strict rules:
+
+- No cross-service database access
+- Inter-service communication via:
+  - REST APIs
+  - Message brokers (Kafka / RabbitMQ)
+
+---
+
+# 1.3 SOLID Principles (MANDATORY)
+
+All backend systems must follow **SOLID principles**.
+
+### Single Responsibility Principle
+
+Each module must handle **only one responsibility**.
+
+Example separation:
+
+```
+Controller (API Layer)
+Service (Business Logic)
+DAO (Database Queries)
+Schema (Validation)
+```
+
+---
+
+### Open / Closed Principle
+
+Systems must be **extendable without modifying core components**.
+
+---
+
+### Liskov Substitution Principle
+
+Interfaces must remain predictable and interchangeable.
+
+---
+
+### Interface Segregation Principle
+
+Avoid large interfaces.
+
+Break systems into **smaller modular services**.
+
+---
+
+### Dependency Inversion Principle
+
+High-level modules must depend on **abstractions**, not concrete implementations.
+
+---
+
+# 2. CLEAN LAYERED ARCHITECTURE
+
+Every microservice must follow strict layering.
+
+```
+API Layer
+↓
+Service Layer
+↓
+DAO Layer
+↓
+Database
+```
+
+---
+
+## 2.1 API Layer
+
+Responsibilities:
+
+- Request validation
+- Authentication
+- Authorization
+- Response formatting
+- Status code handling
+
+Must NOT contain:
+
+- Business logic
+- Database queries
+
+---
+
+## 2.2 Service Layer
+
+Responsibilities:
+
+- Business rules
+- Workflow orchestration
+- Transaction control
+- Coordination between DAO operations
+
+Must NOT contain:
+
+- HTTP request logic
+- Raw SQL queries
+
+---
+
+## 2.3 DAO Layer
+
+Responsibilities:
+
+- Database communication
+- Native SQL queries
+- Data mapping
+
+DAO must **never contain business logic**.
+
+---
+
+# 3. DATABASE ENGINEERING (MySQL)
+
+Database design must support **high-scale SaaS workloads**.
+
+---
+
+## 3.1 Native Query Standard
+
+All queries must be **explicit SQL**.
+
+Example:
+
+```sql
+SELECT
+    u.user_id,
+    u.email,
+    u.created_at
+FROM users u
+WHERE u.user_id = ?
+```
+
+Rules:
+
+- Never use `SELECT *`
+- Explicit column selection
+- Query readability
+- Performance awareness
+
+## 3.2 Indexing Strategy
+
+Every table must include:
+
+- Primary keys
+- Foreign keys
+- Composite indexes when necessary
+
+Example:
+
+```sql
+INDEX idx_user_email (email)
+INDEX idx_order_user_created (user_id, created_at)
+```
+
+Indexes must reflect actual query patterns.
+
+## 3.3 Transaction Safety
+
+Critical operations must use ACID-compliant transactions.
+
+Example:
+
+```sql
+BEGIN;
+INSERT ...
+UPDATE ...
+COMMIT;
+```
+
+Rollback on failure.
+
+## 3.4 Query Performance Rules
+
+Avoid:
+
+- N+1 queries
+- Full table scans
+- Unbounded queries
+- Over-joining tables
+
+Ensure:
+
+- Query plan analysis
+- Index utilization
+- Pagination on large datasets
+
+---
+
+# 4. API DESIGN STANDARDS
+
+APIs must follow enterprise REST design principles.
+
+## 4.1 Endpoint Naming
+
+Use resource-based structure.
+
+Correct:
+
+```
+GET    /users/{id}
+POST   /users
+PUT    /users/{id}
+DELETE /users/{id}
+```
+
+Avoid:
+
+```
+/getUser
+/createUser
+```
+
+## 4.2 Response Format
+
+Standard response structure:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "User retrieved successfully"
+}
+```
+
+Error response:
+
+```json
+{
+  "success": false,
+  "error_code": "USER_NOT_FOUND",
+  "message": "User does not exist"
+}
+```
+
+## 4.3 Input Validation
+
+All requests must use Pydantic schemas.
+
+Example:
+
+```python
+class CreateUserRequest(BaseModel):
+    email: EmailStr
+    password: str
+```
+
+Never trust raw input.
+
+---
+
+# 5. SECURITY REQUIREMENTS
+
+Security must be built into system design.
+
+## 5.1 Authentication
+
+Preferred methods:
+
+- JWT
+- OAuth2
+- API Keys
+
+## 5.2 Authorization
+
+Use Role-Based Access Control (RBAC).
+
+Example:
+
+- Admin
+- User
+- Moderator
+
+## 5.3 Input Protection
+
+Prevent:
+
+- SQL Injection
+- Malicious payloads
+- Invalid data formats
+
+## 5.4 Sensitive Data Protection
+
+Never log:
+
+- passwords
+- tokens
+- payment details
+- personal secrets
+
+Sensitive information must be encrypted where necessary.
+
+---
+
+# 6. PERFORMANCE & SCALABILITY
+
+Backend services must assume billion-user scale.
+
+## 6.1 Async First
+
+All IO operations must use async patterns.
+
+- `async` / `await`
+
+Used for:
+
+- database calls
+- external APIs
+- messaging
+
+## 6.2 Caching Strategy
+
+Use caching for frequently accessed data.
+
+Examples:
+
+- Redis
+- in-memory cache
+- response caching
+
+Typical cache candidates:
+
+- user profile data
+- configuration
+- product catalogs
+
+## 6.3 Pagination
+
+All large list APIs must support pagination.
+
+Example:
+
+```
+GET /orders?page=1&limit=20
+```
+
+Never return unbounded datasets.
+
+---
+
+# 7. OBSERVABILITY & MONITORING
+
+Every service must include observability.
+
+Required features:
+
+- Structured logging
+- Request tracing
+- Error monitoring
+
+Common tools:
+
+- Prometheus
+- Grafana
+- OpenTelemetry
+
+---
+
+# 8. TESTING REQUIREMENTS
+
+No service may exist without automated test coverage.
+
+## 8.1 Required Testing Stack
+
+- Pytest
+- HTTPX test client
+- pytest-asyncio
+
+## 8.2 Coverage Requirements
+
+Tests must validate:
+
+- API endpoints
+- Service logic
+- DAO queries
+- Error conditions
+- Edge cases
+
+Follow AAA pattern:
+
+```
+Arrange
+Act
+Assert
+```
+
+Target coverage:
+
+- **80%+ meaningful coverage**
+
+---
+
+# 9. STRICTLY PROHIBITED
+
+The following practices are forbidden:
+
+- Business logic inside controllers
+- SQL queries inside service layer
+- Cross-service database access
+- Hardcoded secrets
+- `SELECT *`
+- No pagination for large datasets
+- Unbounded queries
+- Monolithic services
+- Untested endpoints
+
+---
+
+# 10. REQUIRED OUTPUT STRUCTURE
+
+Every implementation must include:
+
+- Microservice folder structure
+- API layer
+- Service layer
+- DAO layer
+- Pydantic schemas
+- MySQL native queries
+- Configuration management
+- Error handling
+- Logging
+- Unit tests
+
+---
+
+# Implementation Philosophy
+
+A billion-user backend system requires more than working APIs.
+
+It requires:
+
+- Architectural clarity
+- Database efficiency
+- Fault tolerance
+- Strict modularity
+- Observability
+- Security discipline
+
+A scalable backend must be:
+
+- Reliable
+- Maintainable
+- Performant
+- Secure
+- Observable
+- Testable
+
+---
+
+# Important Engineering Rules (MUST FOLLOW)
+
+- Before writing code, describe the architecture and wait for approval.
+- If requirements are ambiguous, ask clarifying questions.
+- After writing code, list edge cases and suggest test cases.
+- If a task requires changes to more than 3 files, break it into smaller tasks.
+- When fixing bugs, first write a failing test, then fix the issue.
+- Reflect and improve after mistakes.
+- Follow strict API → Service → DAO architecture.
+- All database queries must be native MySQL SQL.
+- Every API must include validation.
+- Always write unit tests.
+- Avoid monolithic functions.
+- Write reusable services and utilities.
+- Ensure all APIs include logging and error handling.
