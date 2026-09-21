@@ -1,0 +1,670 @@
+---
+name: express-backend-design
+description: Architect and implement enterprise-grade, SaaS-level backend systems using Express.js with TypeScript, Clean Architecture, security-first engineering, scalability, observability, and mandatory test coverage. Designed for platforms serving millions to billions of users with production-grade reliability.
+---
+
+# Enterprise Express.js Backend Architecture & Engineering Standard
+
+This skill defines the mandatory engineering standards for building enterprise-grade backend systems using Express.js.
+
+The objective is to deliver:
+
+- Scalable architecture
+- Secure APIs
+- Maintainable codebase
+- High performance
+- Production observability
+- Test-driven reliability
+- Enterprise-level code quality
+
+Every implementation must satisfy production engineering standards suitable for high-scale SaaS products.
+
+---
+
+# 1. NON-NEGOTIABLE ENGINEERING REQUIREMENTS
+
+## 1.1 Framework & Platform Standard
+
+Framework:
+- Express.js
+
+Language:
+- TypeScript (Strict Mode)
+
+Runtime:
+- Node.js LTS
+
+Package Manager:
+- pnpm (preferred)
+
+No JavaScript.
+No CommonJS.
+Only ES Modules.
+
+---
+
+## 1.2 Architecture Standard
+
+Every implementation must follow:
+
+### SOLID Principles
+
+- Single Responsibility
+- Open/Closed
+- Liskov Substitution
+- Interface Segregation
+- Dependency Inversion
+
+### Clean Architecture
+
+Strict dependency direction:
+
+```
+Routes
+    ↓
+Controllers
+    ↓
+Services / Use Cases
+    ↓
+Repositories
+    ↓
+Database
+```
+
+Business logic must NEVER exist inside:
+
+- Routes
+- Controllers
+- Middleware
+
+Controllers only orchestrate requests and responses.
+
+---
+
+## 1.3 Folder Structure
+
+Every project must follow:
+
+```
+src/
+│
+├── app.ts
+├── server.ts
+│
+├── config/
+├── constants/
+├── routes/
+├── controllers/
+├── services/
+├── repositories/
+├── middleware/
+├── validators/
+├── dto/
+├── entities/
+├── interfaces/
+├── database/
+├── utils/
+├── helpers/
+├── types/
+├── errors/
+├── logger/
+├── cache/
+├── jobs/
+├── events/
+├── docs/
+├── tests/
+│
+└── modules/
+      ├── auth/
+      ├── users/
+      ├── products/
+      └── ...
+```
+
+Requirements:
+
+- Feature isolation
+- Modular design
+- No circular dependencies
+- Clear dependency flow
+- Reusable services
+- Independent modules
+
+---
+
+# 2. API DESIGN STANDARD
+
+## RESTful Design
+
+Routes must follow REST conventions.
+
+Good
+
+```
+GET /users
+GET /users/:id
+
+POST /users
+
+PATCH /users/:id
+
+DELETE /users/:id
+```
+
+Avoid
+
+```
+POST /getUsers
+
+POST /deleteUser
+
+GET /createProduct
+```
+
+---
+
+## HTTP Status Codes
+
+Must use proper HTTP responses.
+
+Examples:
+
+```
+200 OK
+
+201 Created
+
+204 No Content
+
+400 Bad Request
+
+401 Unauthorized
+
+403 Forbidden
+
+404 Not Found
+
+409 Conflict
+
+422 Validation Error
+
+429 Too Many Requests
+
+500 Internal Server Error
+```
+
+Never return:
+
+```
+200
+{
+    success:false
+}
+```
+
+for failures.
+
+---
+
+## Response Format
+
+Success
+
+```json
+{
+    "success": true,
+    "message": "User created successfully",
+    "data": {}
+}
+```
+
+Failure
+
+```json
+{
+    "success": false,
+    "message": "Validation failed",
+    "errors": []
+}
+```
+
+Responses must remain consistent across the application.
+
+---
+
+# 3. SECURITY REQUIREMENTS (MANDATORY)
+
+Every API must include:
+
+- Helmet
+- CORS configuration
+- Rate limiting
+- Request validation
+- XSS protection
+- SQL Injection prevention
+- NoSQL Injection prevention
+- Parameter sanitization
+- Environment variable validation
+- Secure headers
+
+Never trust client input.
+
+Always validate:
+
+- body
+- params
+- query
+- headers
+
+---
+
+## Authentication
+
+Preferred:
+
+- JWT Access Token
+- Refresh Token
+
+Password hashing:
+
+- bcrypt
+
+Never:
+
+- Store plain passwords
+- Return sensitive fields
+- Log passwords
+- Expose secrets
+
+---
+
+## Authorization
+
+Role-based authorization.
+
+Support:
+
+- RBAC
+- Permission middleware
+- Resource ownership validation
+
+---
+
+# 4. VALIDATION STANDARD
+
+Use:
+
+- Zod
+
+or
+
+- Joi
+
+Validation belongs inside:
+
+```
+validators/
+```
+
+Never validate inside controllers.
+
+---
+
+# 5. DATABASE STANDARDS
+
+Supported:
+
+- PostgreSQL
+- MySQL
+- MongoDB
+
+Preferred ORM:
+
+- Prisma
+
+Alternative:
+
+- TypeORM
+
+Repositories abstract ORM implementation.
+
+Business logic must never know ORM details.
+
+---
+
+# 6. ERROR HANDLING
+
+Global error handler is mandatory.
+
+Use custom errors.
+
+Example:
+
+```
+BaseError
+
+ValidationError
+
+UnauthorizedError
+
+ForbiddenError
+
+ConflictError
+
+NotFoundError
+
+InternalServerError
+```
+
+Never expose stack traces in production.
+
+---
+
+# 7. LOGGING & OBSERVABILITY
+
+Mandatory logger:
+
+- Pino
+
+or
+
+- Winston
+
+Every request should log:
+
+- Request ID
+- Method
+- URL
+- Status
+- Duration
+- User ID (if authenticated)
+
+Never log:
+
+- Passwords
+- Tokens
+- Secrets
+
+---
+
+# 8. PERFORMANCE REQUIREMENTS
+
+Always consider:
+
+- Async operations
+- Connection pooling
+- Compression
+- Pagination
+- Database indexing
+- Query optimization
+- Response caching
+- Lazy loading
+- Streaming for large files
+
+Avoid:
+
+- N+1 queries
+- Blocking operations
+- Large payloads
+- Synchronous filesystem calls
+
+---
+
+# 9. CACHING
+
+Support:
+
+- Redis
+
+Use for:
+
+- Sessions
+- Frequently accessed data
+- Rate limiting
+- Queue state
+
+Cache invalidation must be intentional.
+
+---
+
+# 10. BACKGROUND JOBS
+
+Use:
+
+- BullMQ
+
+or
+
+- Agenda
+
+Examples:
+
+- Emails
+- Notifications
+- Reports
+- Image processing
+- Scheduled tasks
+
+Never execute long-running jobs inside request handlers.
+
+---
+
+# 11. API DOCUMENTATION
+
+Mandatory:
+
+OpenAPI
+
+Swagger
+
+Every endpoint must include:
+
+- Summary
+- Description
+- Parameters
+- Request Body
+- Responses
+- Authentication requirements
+
+---
+
+# 12. TESTING (MANDATORY)
+
+No module may exist without tests.
+
+Frameworks:
+
+- Jest
+- Supertest
+
+Coverage:
+
+- Controllers
+- Services
+- Repositories
+- Middleware
+- Validators
+- Utilities
+- Authentication
+- Authorization
+
+Target:
+
+Minimum 80% meaningful coverage.
+
+Use AAA Pattern.
+
+Arrange
+
+Act
+
+Assert
+
+---
+
+# 13. CODE QUALITY
+
+Strict TypeScript.
+
+No:
+
+- any
+- dead code
+- duplicated logic
+- console.log
+- magic strings
+
+Prefer:
+
+- interfaces
+- dependency injection
+- reusable abstractions
+- strongly typed DTOs
+
+---
+
+# 14. ENVIRONMENT CONFIGURATION
+
+Use:
+
+```
+.env
+
+.env.development
+
+.env.production
+
+.env.test
+```
+
+Environment variables must be validated during application startup.
+
+Application should fail fast on invalid configuration.
+
+---
+
+# 15. SCALABILITY MINDSET
+
+Assume:
+
+- Millions of concurrent users
+- Horizontal scaling
+- Containerized deployments
+- Load balancers
+- Stateless services
+- Distributed caching
+- Event-driven workflows
+
+Code should support future microservice migration.
+
+---
+
+# 16. OBSERVABILITY
+
+Include:
+
+- Health endpoint
+
+```
+GET /health
+```
+
+Readiness endpoint
+
+```
+GET /ready
+```
+
+Metrics endpoint
+
+```
+GET /metrics
+```
+
+Support:
+
+- Prometheus
+- Grafana
+- OpenTelemetry
+
+---
+
+# 17. STRICTLY PROHIBITED
+
+Never:
+
+- Put business logic in controllers
+- Access database directly from routes
+- Use any
+- Ignore errors
+- Catch errors silently
+- Hardcode secrets
+- Commit .env
+- Use console.log in production
+- Mix validation with business logic
+- Return inconsistent API responses
+- Create monolithic services
+- Skip tests
+
+---
+
+# 18. REQUIRED OUTPUT STRUCTURE
+
+For every implementation always provide:
+
+1. Folder structure
+2. Route definitions
+3. Controllers
+4. Services
+5. Repositories
+6. DTOs
+7. Validation schemas
+8. Middleware
+9. Error handling
+10. Utilities
+11. Configuration
+12. Unit tests
+13. Integration tests
+14. API documentation
+15. Architectural explanation
+
+---
+
+# Implementation Philosophy
+
+Enterprise backend systems are built through engineering discipline, not shortcuts.
+
+Every solution should be:
+
+- Secure
+- Predictable
+- Testable
+- Maintainable
+- Scalable
+- Observable
+- Performant
+- Production-ready
+
+The backend should remain robust under continuous delivery, evolving business requirements, and massive traffic.
+
+This skill enforces that standard.
+
+---
+
+# Important Rules (MUST FOLLOW FOR EVERY IMPLEMENTATION)
+
+1. Before writing any code, describe the implementation approach and wait for approval.
+2. If requirements are ambiguous, ask clarifying questions before writing code.
+3. After implementation, list edge cases and recommend corresponding test cases.
+4. If a task requires changes to more than three files, break it into smaller milestones before coding.
+5. For bug fixes, first write a failing test that reproduces the issue, then implement the fix until the test passes.
+6. Reflect on every correction received and explain how future mistakes will be prevented.
+7. Use dependency injection wherever appropriate.
+8. Validate every request using dedicated validation schemas.
+9. Every module must include unit tests.
+10. Every public API must include integration tests.
+11. No file should exceed 500 lines where practical; refactor into reusable modules when necessary.
+12. Review all code for logical errors before finalizing.
+13. Prefer modular, feature-based architecture over monolithic structures.
+14. Build reusable services, middleware, validators, and utilities.
+15. Every API implementation must include Swagger/OpenAPI documentation, centralized error handling, structured logging, and health check endpoints.

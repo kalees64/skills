@@ -1,0 +1,578 @@
+---
+name: nextjs-seo-expert
+description: Architect, implement, audit, and update production-grade SEO for Next.js (App Router, TypeScript) applications - technical SEO, metadata, structured data, sitemaps, robots, canonicals, Core Web Vitals, international SEO, content/E-E-A-T, and ongoing SEO maintenance. Make sure to use this skill whenever the user mentions SEO, Google ranking, search visibility, indexing, sitemap, robots.txt, meta tags, Open Graph, schema markup, JSON-LD, canonical URLs, Core Web Vitals, Lighthouse, Search Console, page speed, "rank on Google", "not showing in search", or asks to audit, fix, or improve the discoverability of any Next.js website - even if they do not explicitly say "SEO".
+---
+
+# Next.js SEO Expert Standard
+
+This skill defines the mandatory standard for making Next.js applications crawlable, indexable, fast, and competitive in Google Search (and other engines and AI answer surfaces).
+
+## Honest Expectations (read first)
+
+No code or skill can guarantee a #1 ranking. Rankings depend on content quality, search intent match, backlinks, brand authority, competition, and time. What this skill does is remove every technical and on-page obstacle, so that the site competes on merit. Never promise rankings to the user. Promise: correct implementation, measurable audits, and a clear improvement process.
+
+SEO has four layers. All four must be addressed:
+
+1. **Technical SEO** - can Google crawl, render, and index the page?
+2. **On-page SEO** - does each page clearly match a search intent?
+3. **Content and E-E-A-T** - is the page genuinely useful, original, and trustworthy?
+4. **Authority and measurement** - links, brand signals, Search Console feedback loop.
+
+Code can fully own layers 1 and 2, and can support 3 and 4. Be explicit with the user about which parts need human input (content, backlinks).
+
+---
+
+# 0. WORKFLOW (MUST FOLLOW FOR EACH SEO TASK)
+
+1. **Discover**: Identify site type (marketing, SaaS, e-commerce, blog, docs, directory, local business, multi-language), target market, primary keywords per page type, and the existing state (Next.js version, App Router vs Pages Router, deployment host, domain).
+2. **Ask before coding** if any of these are unknown: production domain, target languages/regions, page types, brand name, logo URL, social profiles. Do not guess the canonical domain.
+3. **Describe the approach and wait for approval** before writing code (respect the project's Important Rules).
+4. **Implement** using the sections below, in priority order (Section 12).
+5. **Verify** with the checklist in Section 13.
+6. **Report edge cases and suggest tests** after writing code.
+
+If the change touches more than 3 files, split it into smaller tasks first.
+
+---
+
+# 1. FRAMEWORK RULES
+
+- Use the **App Router** for new work. If the project is on the Pages Router, use `next/head` and `next-sitemap`, and recommend migration when practical.
+- Prefer **Server Components** for all SEO-critical content. Content that Google must index must be present in the initial server-rendered HTML, not fetched client-side after hydration.
+- Rendering choice per page type:
+
+| Page type | Strategy |
+|---|---|
+| Marketing, landing, pricing | SSG (static) |
+| Blog, docs, articles | SSG + ISR (`revalidate`) |
+| Product / listing pages | ISR with on-demand revalidation (`revalidateTag` / `revalidatePath`) |
+| Search results, filters, user dashboards | SSR or client; usually `noindex` |
+| Logged-in / private pages | `noindex`, blocked or auth-gated |
+
+- Never hide primary content behind client-only rendering, tabs that load on click, infinite scroll without paginated URLs, or `useEffect` data fetching.
+- Note for Next.js 15+: `params` and `searchParams` are **Promises** in pages, layouts, and `generateMetadata`. Always `await` them. Verify the project's Next.js version before writing code.
+
+---
+
+# 2. METADATA (MANDATORY ON EVERY ROUTE)
+
+Use the built-in Metadata API. Never hand-write `<head>` tags in App Router.
+
+## 2.1 Root layout defaults
+
+```tsx
+// app/layout.tsx
+import type { Metadata, Viewport } from "next";
+import { siteConfig } from "@/config/site";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.name,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: siteConfig.name,
+    locale: siteConfig.locale,
+    url: "/",
+  },
+  twitter: { card: "summary_large_image" },
+  robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: siteConfig.themeColor,
+};
+```
+
+`metadataBase` is required. Without it, relative canonical and Open Graph URLs break.
+
+## 2.2 Per-page dynamic metadata
+
+```tsx
+// app/blog/[slug]/page.tsx
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getPostBySlug } from "@/services/posts";
+
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
+  if (!post) return { title: "Not found", robots: { index: false } };
+
+  return {
+    title: post.seoTitle ?? post.title,
+    description: post.seoDescription ?? post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.excerpt,
+      url: `/blog/${post.slug}`,
+      publishedTime: post.publishedAt,
+      modifiedTime: post.updatedAt,
+      authors: [post.authorName],
+    },
+  };
+}
+```
+
+## 2.3 Metadata rules
+
+- **Title**: unique per page, 50-60 characters, primary keyword near the front, brand at the end via the template.
+- **Description**: unique per page, 120-160 characters, written as a compelling summary with a reason to click. Not keyword stuffing.
+- **One canonical URL per page**, absolute via `metadataBase`, no tracking parameters, consistent trailing-slash policy (set `trailingSlash` in `next.config.ts` deliberately).
+- **Open Graph and Twitter** on every indexable page. Images 1200x630.
+- **Never duplicate** the same title or description across pages. Generate from data, with fallbacks.
+- Use `robots: { index: false, follow: false }` for thank-you pages, internal search, staging, admin, cart, and checkout.
+- Do not use the deprecated `keywords` meta tag for ranking. It is ignored by Google.
+- Fetch shared data in `generateMetadata` and the page with `cache()` or the built-in request memoization so it is not double-fetched.
+
+## 2.4 Dynamic social images
+
+Use file conventions: `opengraph-image.tsx` and `twitter-image.tsx` per route segment with `ImageResponse` from `next/og`, so every page gets a unique share card. Provide alt text.
+
+---
+
+# 3. CRAWLING AND INDEXING FILES
+
+## 3.1 `app/robots.ts`
+
+```ts
+import type { MetadataRoute } from "next";
+import { siteConfig } from "@/config/site";
+
+export default function robots(): MetadataRoute.Robots {
+  const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production";
+  if (!isProduction) {
+    return { rules: { userAgent: "*", disallow: "/" } };
+  }
+  return {
+    rules: [
+      { userAgent: "*", allow: "/", disallow: ["/api/", "/admin/", "/cart", "/checkout", "/search"] },
+    ],
+    sitemap: `${siteConfig.url}/sitemap.xml`,
+    host: siteConfig.url,
+  };
+}
+```
+
+Rules:
+
+- Block **staging and preview** deployments entirely. Accidentally indexed staging sites cause duplicate content.
+- **Never block** `/_next/static/` or CSS/JS. Google needs them to render the page.
+- `robots.txt` blocks crawling, not indexing. To keep a page out of results, use `noindex` and leave it crawlable so Google can see the tag.
+
+## 3.2 `app/sitemap.ts`
+
+```ts
+import type { MetadataRoute } from "next";
+import { siteConfig } from "@/config/site";
+import { getAllPostSlugs } from "@/services/posts";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const posts = await getAllPostSlugs();
+  const staticRoutes = ["", "/pricing", "/about", "/contact", "/blog"].map((path) => ({
+    url: `${siteConfig.url}${path}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: path === "" ? 1 : 0.8,
+  }));
+  const postRoutes = posts.map((post) => ({
+    url: `${siteConfig.url}/blog/${post.slug}`,
+    lastModified: new Date(post.updatedAt),
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+  return [...staticRoutes, ...postRoutes];
+}
+```
+
+Rules:
+
+- Include **only canonical, indexable, 200-status** URLs. No redirects, `noindex` pages, or 404s.
+- Use **real** `lastModified` dates from the data source. Faking "now" on every build teaches Google to ignore the field.
+- Over 50,000 URLs or 50 MB: use `generateSitemaps()` to split into multiple sitemaps.
+- Add image and video sitemap entries where they matter (e-commerce, media).
+- Submit the sitemap in Google Search Console and Bing Webmaster Tools.
+
+---
+
+# 4. STRUCTURED DATA (JSON-LD)
+
+Structured data helps Google understand pages and can unlock rich results. It does not directly boost rankings.
+
+## 4.1 Reusable, typed component
+
+```tsx
+// components/seo/JsonLd.tsx
+import type { Thing, WithContext } from "schema-dts";
+
+interface JsonLdProps<T extends Thing> {
+  data: WithContext<T>;
+  id: string;
+}
+
+export function JsonLd<T extends Thing>({ data, id }: JsonLdProps<T>) {
+  const json = JSON.stringify(data).replace(/</g, "\\u003c");
+  return (
+    <script
+      id={id}
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: json }}
+    />
+  );
+}
+```
+
+- Use the `schema-dts` package for type-safe schema.
+- Always escape `<` to prevent script injection from user-generated content.
+- Build schema objects in `/utils/seo/schema` builder functions, not inline in JSX.
+
+## 4.2 Which schema to use
+
+| Page | Schema types |
+|---|---|
+| Home / sitewide | `Organization` (with `logo`, `sameAs`), `WebSite` |
+| Blog / news | `Article` or `BlogPosting` with `author`, `datePublished`, `dateModified`, `image` |
+| Product | `Product` with `offers`, `aggregateRating` (only if real reviews) |
+| Local business | `LocalBusiness` with address, hours, geo |
+| Tutorials / guides | `HowTo` only if the content is actually step-based |
+| Navigation | `BreadcrumbList` on every non-home page |
+| Courses, events, jobs, recipes, software | `Course`, `Event`, `JobPosting`, `Recipe`, `SoftwareApplication` |
+
+Rules:
+
+- Schema must **match visible page content**. Marking up content users cannot see violates Google's guidelines and risks a manual action.
+- Never fabricate reviews or ratings.
+- FAQ rich results are now limited to well-known authoritative government and health sites. Still write clear FAQ content, but do not rely on `FAQPage` markup for visibility.
+- Validate with Google's Rich Results Test and the Schema Markup Validator.
+
+---
+
+# 5. URL AND ROUTING ARCHITECTURE
+
+- URLs: lowercase, hyphen-separated, short, descriptive, keyword-relevant (`/blog/nextjs-seo-guide`, not `/p?id=482`).
+- Shallow hierarchy. Important pages within 3 clicks of the home page.
+- One URL per piece of content. Choose one of `www` vs non-`www`, `http`, and trailing slash, then redirect everything else with a **301/308**.
+- Permanent redirects in `next.config.ts`:
+
+```ts
+async redirects() {
+  return [
+    { source: "/old-path", destination: "/new-path", permanent: true },
+  ];
+}
+```
+
+- Missing content: call `notFound()` so a real **404** status is returned. Never render a "not found" message with a 200 (soft 404).
+- Removed permanently: return **410** where possible, or 301 to the closest relevant page.
+- Faceted navigation and filters: canonicalize to the base listing or `noindex` low-value combinations.
+- Pagination: each page gets its own crawlable URL (`?page=2` or `/page/2`), a self-referencing canonical, and normal `<a href>` links. Do not canonicalize page 2 to page 1.
+- Use `next/link` for internal links. It renders real `<a href>` anchors that crawlers follow. Never use `onClick` + `router.push` for navigation that should be crawlable.
+- Descriptive anchor text. Not "click here".
+- Fix orphan pages by linking them from relevant pages and the sitemap.
+
+---
+
+# 6. CORE WEB VITALS AND PERFORMANCE
+
+Page experience is a ranking signal, and speed directly affects conversions. Targets (75th percentile, field data):
+
+- **LCP** under 2.5 s
+- **INP** under 200 ms
+- **CLS** under 0.1
+
+## 6.1 Images
+
+- Use `next/image` for every image. Always set `alt` (meaningful, descriptive, empty `alt=""` only for decorative images), plus `width`/`height` or `fill` with a sized parent to prevent layout shift.
+- Add `priority` to the **LCP image only** (usually the hero). Do not add it to many images.
+- Set an accurate `sizes` attribute for responsive images.
+- Prefer AVIF and WebP (Next.js serves these automatically).
+- Lazy-load everything below the fold (default).
+
+## 6.2 Fonts
+
+- Use `next/font` (Google or local). It self-hosts fonts and removes render-blocking requests and layout shift.
+- Use `display: "swap"`, subset only needed character sets, and limit weights.
+
+## 6.3 JavaScript and third parties
+
+- Keep the client bundle small. Push `"use client"` boundaries as deep (leaf-ward) as possible.
+- Use `next/dynamic` for heavy, non-critical, below-the-fold components.
+- Load analytics, chat widgets, and tag managers with `next/script` and `strategy="lazyOnload"` or `"afterInteractive"`. Never block rendering with third-party scripts.
+- Audit bundles with `@next/bundle-analyzer`. Remove unused dependencies.
+
+## 6.4 Rendering and caching
+
+- Prefer static generation and CDN caching. Use ISR for frequently changing content.
+- Use Suspense streaming so the main content appears fast, while slow sections load later. Ensure SEO-critical content is not inside a slow, late-streaming boundary.
+- Reserve space for ads, embeds, and images to prevent CLS.
+- Avoid long main-thread tasks that hurt INP. Debounce handlers and defer non-urgent work.
+
+## 6.5 Measure
+
+- Lighthouse, PageSpeed Insights, and CrUX (real user data) via Search Console's Core Web Vitals report.
+- Add `useReportWebVitals` to send real-user metrics to analytics.
+- Lab scores are diagnostic. Field data is what Google uses.
+
+---
+
+# 7. ON-PAGE CONTENT STRUCTURE
+
+- **Exactly one `<h1>` per page**, containing the primary topic. Logical `h2`-`h6` hierarchy, no skipped levels.
+- Primary keyword in: the title, the `h1`, the first 100 words, the URL, and at least one image `alt` where natural.
+- Use semantic HTML (`<main>`, `<article>`, `<section>`, `<nav>`, `<header>`, `<footer>`) with `aria-label` and unique `id` values as required by the project standard. Accessibility and SEO reinforce each other.
+- Write for **search intent** (informational, navigational, commercial, transactional). Match the format that already ranks: guide, list, comparison, tool, product page.
+- Cover the topic thoroughly, including related questions and entities, rather than repeating one keyword.
+- Use short paragraphs, descriptive subheadings, lists, and tables where they help.
+- Internal linking: 3-10 contextual links to relevant pages, using descriptive anchors. Create **topic clusters**: one pillar page linking to supporting pages, and each supporting page linking back.
+- External links: cite authoritative sources. Use `rel="nofollow"`/`rel="sponsored"`/`rel="ugc"` for paid or user-generated links.
+- Visible breadcrumbs matching the `BreadcrumbList` schema.
+- Show a visible **last updated** date on evergreen content and actually update it when the content changes.
+- Avoid thin pages, doorway pages, near-duplicate pages, and mass-generated low-value content.
+
+---
+
+# 8. E-E-A-T AND TRUST SIGNALS
+
+Google's quality systems reward Experience, Expertise, Authoritativeness, and Trust. Implement what code can support:
+
+- Author pages with bio, credentials, and `Person` schema. Bylines on articles.
+- Dedicated About, Contact, Privacy Policy, Terms, and (for commerce) shipping/returns pages, linked in the footer.
+- Real company details: address, phone, email, registration where relevant.
+- HTTPS everywhere, with HSTS. No mixed content.
+- Original data, screenshots, case studies, and first-hand experience beat rewritten summaries.
+- Cite sources. Keep facts current.
+- For YMYL topics (health, finance, legal), require expert authorship and review, and add clear disclaimers.
+
+Tell the user plainly: this layer requires real content and reputation work that code alone cannot fake.
+
+---
+
+# 9. INTERNATIONAL AND MULTI-LANGUAGE SEO
+
+- Use locale routing (`/en`, `/fr`, `/hi`) via the App Router `[lang]` segment or a maintained i18n library. Prefer subdirectories or subdomains over query parameters.
+- Add `hreflang` via `alternates.languages`, including a self-reference and `x-default`:
+
+```ts
+alternates: {
+  canonical: `/${lang}/pricing`,
+  languages: {
+    "en-US": "/en/pricing",
+    "fr-FR": "/fr/pricing",
+    "x-default": "/en/pricing",
+  },
+},
+```
+
+- `hreflang` links must be reciprocal across all variants.
+- Set `<html lang={lang}>` (and `dir="rtl"` where needed) in the root layout.
+- Translate the content properly, including titles, descriptions, URLs, and alt text. Do not rely on auto-redirecting users by IP or browser language in a way that blocks crawlers. Suggest a language switcher banner instead.
+- Include localized URLs in the sitemap.
+
+---
+
+# 10. LOCAL, E-COMMERCE, AND SPECIAL CASES
+
+**Local business**
+- Consistent Name, Address, Phone (NAP) across site and directories.
+- `LocalBusiness` schema, embedded map, location pages with unique content.
+- Google Business Profile set up and linked (off-code, tell the user).
+
+**E-commerce**
+- Unique titles, descriptions, and content per product. Avoid manufacturer copy-paste.
+- `Product` + `Offer` schema with accurate price, currency, and availability, kept in sync with the real data.
+- Handle variants (size, color) with one canonical product URL or distinct indexable URLs by deliberate choice.
+- Out-of-stock: keep the page, mark availability, and link to alternatives. Discontinued: 301 to the closest category.
+- Product feed to Google Merchant Center (off-code).
+
+**Single-page or dashboard apps**
+- Public marketing pages must be server-rendered. App interiors behind login are `noindex`.
+
+**JavaScript-heavy widgets**
+- Test with "View Page Source" and the URL Inspection tool's rendered HTML to confirm that content is present.
+
+---
+
+# 11. AI SEARCH AND GENERATIVE ENGINE VISIBILITY
+
+- Write clear, direct answers near the top of relevant sections (definition, steps, comparison), followed by depth.
+- Use structured headings, lists, and tables so passages are easy to extract and cite.
+- Keep entity information consistent (brand name, product names, authors).
+- Add `llms.txt` only as an optional convenience. No major engine has confirmed that it is a ranking factor.
+- Do not block legitimate search crawlers. Decide deliberately about AI training crawlers in `robots.ts` based on the business's preference.
+
+---
+
+# 12. IMPLEMENTATION PRIORITY ORDER
+
+When starting or auditing a site, work in this order for the biggest gains first:
+
+1. Confirm the site is **indexable**: no accidental `noindex`, no blocking robots rules, production domain correct, HTTPS.
+2. Server-render all primary content.
+3. `metadataBase`, unique titles and descriptions, canonicals.
+4. `robots.ts` and `sitemap.ts`, submitted to Search Console.
+5. Proper 404/301 handling, one canonical host and URL format.
+6. Core Web Vitals: LCP image, fonts, scripts, CLS.
+7. Semantic headings, one `h1`, internal linking, breadcrumbs.
+8. Structured data (Organization, WebSite, BreadcrumbList, Article/Product).
+9. Open Graph and dynamic share images.
+10. International SEO if applicable.
+11. Content strategy, E-E-A-T, and link building (with the user).
+
+---
+
+# 13. VERIFICATION CHECKLIST
+
+Run before declaring the work complete:
+
+**Technical**
+- [ ] `curl -s <url> | grep -i "<title\|canonical\|robots"` shows the expected server-rendered tags
+- [ ] `/robots.txt` and `/sitemap.xml` load and are correct in production
+- [ ] Every indexable page has a unique title, description, canonical, and a single `h1`
+- [ ] No `noindex` on pages that should rank. `noindex` on pages that should not
+- [ ] Non-existent URLs return real 404s. Redirects are 301/308, with no chains or loops
+- [ ] Only one host variant resolves (www/non-www, http/https, trailing slash)
+
+**Performance**
+- [ ] Lighthouse mobile: Performance 90+, SEO 100, Accessibility 90+
+- [ ] LCP, INP, CLS meet targets in field data (or lab proxies for new sites)
+- [ ] LCP image has `priority`. All images have `alt` and dimensions
+
+**Structured data and social**
+- [ ] Rich Results Test passes with no errors, schema matches visible content
+- [ ] Open Graph and Twitter previews render correctly (test with a social debugger)
+
+**Search Console loop**
+- [ ] Domain property verified, sitemap submitted
+- [ ] URL Inspection shows "URL is on Google" and rendered HTML contains the content
+- [ ] Monitor Pages (indexing), Performance (queries, CTR, position), Core Web Vitals, and Manual Actions
+
+---
+
+# 14. SEO UPDATE AND MAINTENANCE PROTOCOL
+
+SEO is continuous. When asked to "update SEO" on an existing site:
+
+1. **Audit first.** Crawl the site (Screaming Frog, Sitebulb, or a script), export Search Console data, and list issues by severity: blocking, high, medium, low.
+2. **Find quick wins** in Search Console: pages ranking positions 5-20 with impressions but a low CTR. Improve titles, descriptions, and content depth, and add internal links.
+3. **Content refresh**: update outdated statistics, add new sections, improve the intro, fix broken links, then update `dateModified` and the sitemap `lastModified` truthfully.
+4. **Consolidate**: merge cannibalizing pages (multiple pages targeting the same query) using 301 redirects into the strongest URL.
+5. **Prune**: improve, merge, or remove thin content. Do not leave low-value pages indexed.
+6. **Redirect map**: before any migration or URL change, produce a complete old-to-new map and test it. Keep it live permanently.
+7. **Migration safety**: keep the same content and URLs where possible, and monitor coverage and traffic daily for 2-4 weeks.
+8. **Regression guard**: add automated checks in CI.
+   - Unit tests for the metadata builders and schema builders
+   - A test that every route in the sitemap returns 200, has a canonical, and is not `noindex`
+   - Lighthouse CI budgets for performance and SEO
+9. **Monthly rhythm**: review Search Console, fix new errors, publish or refresh content, and check competitors' SERP changes.
+
+---
+
+# 15. ARCHITECTURE FOR SEO CODE
+
+Follow the project's component-based architecture and file limits.
+
+```
+/config/site.ts                 # Single source of truth: name, url, locale, social, logo
+/utils/seo/buildMetadata.ts     # Typed metadata factory (title, description, canonical, OG)
+/utils/seo/schema/              # Typed JSON-LD builders (organization, article, product, breadcrumb)
+/components/seo/JsonLd.tsx      # Safe JSON-LD renderer
+/components/seo/Breadcrumbs.tsx # Visible breadcrumbs + BreadcrumbList schema
+/app/robots.ts
+/app/sitemap.ts
+/app/not-found.tsx
+/app/[route]/loading.tsx
+/app/[route]/error.tsx
+/__tests__/seo/                 # Tests for metadata, schema, sitemap, robots
+```
+
+Rules:
+
+- No hardcoded domains, brand names, or titles scattered in components. Everything from `siteConfig`.
+- Strict TypeScript. No `any`. Fully typed metadata and schema inputs.
+- SEO logic lives in utilities and services, not inside JSX.
+- Every route gets `loading.tsx` and `error.tsx`. Error and loading states must not replace crawlable primary content with empty shells.
+- Components stay under 500 lines. Reuse the SEO components everywhere.
+
+---
+
+# 16. REQUIRED TESTS
+
+Use Jest and React Testing Library with the AAA pattern.
+
+- `buildMetadata`: returns a title within the length guidance, the canonical is absolute, and OG fields are populated. Falls back correctly when optional fields are missing.
+- Schema builders: return the correct `@type`, required fields, and ISO 8601 dates. Escaping of `<` in `JsonLd`.
+- `JsonLd`: renders one `application/ld+json` script with the given `id`.
+- `robots()`: disallows everything in non-production and includes the sitemap URL in production.
+- `sitemap()`: contains only canonical absolute URLs, no duplicates, valid `lastModified`.
+- `Breadcrumbs`: renders semantic `nav` with `aria-label`, last item not linked, correct order.
+- Dynamic route: `generateMetadata` returns `noindex` and a fallback title when the data is missing.
+
+Edge cases to always list after implementation:
+
+- Missing or empty CMS fields (title, excerpt, image)
+- Very long or non-Latin titles and slugs
+- Trailing slash and case variants of URLs
+- Query-parameter duplicates (`?utm_source=...`)
+- Preview/staging environments indexed by mistake
+- Paginated and filtered listings
+- Locale fallbacks and missing translations
+- Deleted, moved, or renamed content producing 404s or redirect chains
+- Stale `lastModified` or schema that no longer matches the page
+
+---
+
+# 17. STRICTLY PROHIBITED
+
+- Promising or guaranteeing rankings
+- Keyword stuffing, hidden text, cloaking, or doorway pages
+- Buying links, link schemes, or spammy directory submissions
+- Mass-producing unedited AI content with no added value
+- Fake reviews, fake ratings, or schema that does not match the visible content
+- Duplicate titles, descriptions, or canonicals across pages
+- Client-only rendering of SEO-critical content
+- `noindex` left on production pages, or blocking `/_next/` assets
+- Soft 404s, redirect chains, and mixed-content HTTP resources
+- Blocking rendering with third-party scripts
+- Non-descriptive anchor text and `onClick` navigation in place of links
+- Ignoring Search Console warnings
+
+---
+
+# 18. REQUIRED OUTPUT STRUCTURE
+
+When delivering SEO work, always include:
+
+1. Site and SEO discovery summary (assumptions listed)
+2. Proposed approach, with a request for approval before code
+3. Folder structure
+4. Typed metadata, schema, and SEO components
+5. `robots.ts`, `sitemap.ts`, and redirects/config changes
+6. Performance changes (images, fonts, scripts)
+7. Unit tests for every module
+8. Edge cases and suggested extra tests
+9. Verification checklist results
+10. Manual follow-ups for the user (Search Console setup, Business Profile, content plan, backlinks)
+11. Ongoing maintenance plan
+
+---
+
+# Implementation Philosophy
+
+Ranking well is earned by being the best, most accessible, fastest, and most trustworthy answer to a real search query. Technical excellence lets great content be found. It does not replace it.
+
+Crawlable. Indexable. Fast. Structured. Useful. Trustworthy. Measured.
+
+This skill enforces that standard.
